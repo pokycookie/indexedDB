@@ -33,6 +33,7 @@ request.onupgradeneeded = (e) => {
   }
 };
 
+const CONSOLE = document.getElementById("console");
 const createInput = document.getElementById("createInput");
 const createBtn = document.getElementById("createBtn");
 const getInput = document.getElementById("getInput");
@@ -42,6 +43,10 @@ const deleteBtn = document.getElementById("deleteBtn");
 const putInput = document.getElementById("putInput");
 const putBtn = document.getElementById("putBtn");
 const cursorBtn = document.getElementById("cursorBtn");
+
+const setConsole = (text) => {
+  CONSOLE.innerText = text;
+};
 
 // Add
 createBtn.addEventListener("click", (e) => {
@@ -91,6 +96,7 @@ getBtn.addEventListener("click", (e) => {
   request.onsuccess = (e) => {
     const result = e.target.result;
     console.log(result);
+    setConsole(result.name);
   };
 });
 
@@ -176,6 +182,7 @@ cursorBtn.addEventListener("click", (e) => {
     if (cursor) {
       console.log(`key: ${cursor.key}, name: ${cursor.value.name}`);
       cursor.continue();
+      setConsole(cursor.value.name);
     } else {
       console.log("cursor end");
     }
