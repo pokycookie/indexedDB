@@ -4,9 +4,11 @@ if (!window.indexedDB) {
 }
 
 // Open DB
-const request = window.indexedDB.open("testDB", 2);
+const request = window.indexedDB.open("testDB", 4);
 
 let DB = null;
+
+const OBJECT_NAME = "personName";
 
 request.onerror = () => {
   alert("You must allow the use of IndexedDB");
@@ -26,10 +28,18 @@ request.onupgradeneeded = (e) => {
     objectStore1.createIndex("toon", "toon", { unique: false });
   }
   if (e.oldVersion < 2) {
-    const objectStore2 = DB.createObjectStore("person", {
+    const objectStore = DB.createObjectStore("person", {
       keyPath: "id",
       autoIncrement: true,
     });
+    objectStore.createIndex("personNameIndex", "name");
+  }
+  if (e.oldVersion < 3) {
+    const objectStore = DB.createObjectStore(OBJECT_NAME, {
+      keyPath: "id",
+      autoIncrement: true,
+    });
+    objectStore.createIndex("personNameIndex", "name");
   }
 };
 
@@ -56,7 +66,7 @@ createBtn.addEventListener("click", (e) => {
   if (DB === null) return;
 
   // transaction
-  const transaction = DB.transaction(["person"], "readwrite");
+  const transaction = DB.transaction([OBJECT_NAME], "readwrite");
 
   transaction.onerror = (e) => {
     console.error("transaction error");
@@ -66,7 +76,7 @@ createBtn.addEventListener("click", (e) => {
     console.log("transaction complete");
   };
 
-  const objectStore = transaction.objectStore("person");
+  const objectStore = transaction.objectStore(OBJECT_NAME);
   const request = objectStore.add({ name: createInput.value });
   request.onsuccess = (e) => {
     console.log(e.target.result);
@@ -81,7 +91,7 @@ getBtn.addEventListener("click", (e) => {
   if (DB === null) return;
 
   // transaction
-  const transaction = DB.transaction(["person"], "readonly");
+  const transaction = DB.transaction([OBJECT_NAME], "readonly");
 
   transaction.onerror = (e) => {
     console.error("transaction error");
@@ -91,12 +101,13 @@ getBtn.addEventListener("click", (e) => {
     console.log("transaction complete");
   };
 
-  const objectStore = transaction.objectStore("person");
-  const request = objectStore.get(parseInt(getInput.value));
+  const objectStore = transaction.objectStore(OBJECT_NAME);
+  const index = objectStore.index("personNameIndex");
+  const request = index.get(getInput.value);
   request.onsuccess = (e) => {
     const result = e.target.result;
     console.log(result);
-    setConsole(result.name);
+    if (result !== undefined) setConsole(result.name);
   };
 });
 
@@ -108,7 +119,7 @@ deleteBtn.addEventListener("click", (e) => {
   if (DB === null) return;
 
   // transaction
-  const transaction = DB.transaction(["person"], "readwrite");
+  const transaction = DB.transaction([OBJECT_NAME], "readwrite");
 
   transaction.onerror = (e) => {
     console.error("transaction error");
@@ -118,11 +129,15 @@ deleteBtn.addEventListener("click", (e) => {
     console.log("transaction complete");
   };
 
-  const objectStore = transaction.objectStore("person");
-  const request = objectStore.delete(parseInt(deleteInput.value));
-  request.onsuccess = (e) => {
-    const result = e.target.result;
-    console.log(result);
+  const objectStore = transaction.objectStore(OBJECT_NAME);
+  const index = objectStore.index("personNameIndex");
+  const idRequest = index.get(deleteInput.value);
+  idRequest.onsuccess = (e) => {
+    const request = objectStore.delete(e.target.result.id);
+    request.onsuccess = (e) => {
+      const result = e.target.result;
+      console.log(result);
+    };
   };
 });
 
@@ -134,7 +149,7 @@ putBtn.addEventListener("click", (e) => {
   if (DB === null) return;
 
   // transaction
-  const transaction = DB.transaction(["person"], "readwrite");
+  const transaction = DB.transaction([OBJECT_NAME], "readwrite");
 
   transaction.onerror = (e) => {
     console.error("transaction error");
@@ -144,7 +159,7 @@ putBtn.addEventListener("click", (e) => {
     console.log("transaction complete");
   };
 
-  const objectStore = transaction.objectStore("person");
+  const objectStore = transaction.objectStore(OBJECT_NAME);
   const request = objectStore.get(parseInt(getInput.value));
   request.onsuccess = (e) => {
     const result = e.target.result;
@@ -165,7 +180,7 @@ cursorBtn.addEventListener("click", (e) => {
   if (DB === null) return;
 
   // transaction
-  const transaction = DB.transaction(["person"], "readonly");
+  const transaction = DB.transaction([OBJECT_NAME], "readonly");
 
   transaction.onerror = (e) => {
     console.error("transaction error");
@@ -175,7 +190,7 @@ cursorBtn.addEventListener("click", (e) => {
     console.log("transaction complete");
   };
 
-  const objectStore = transaction.objectStore("person");
+  const objectStore = transaction.objectStore(OBJECT_NAME);
   const request = objectStore.openCursor();
   request.onsuccess = (e) => {
     const cursor = e.target.result;
